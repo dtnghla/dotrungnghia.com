@@ -383,7 +383,7 @@
         // --- 2. COGNITIVE SPHERE GEOMETRY (Spherical Cube) ---
         // Creating a box geometry and normalizing vertices to project to sphere
         // This gives a nicer grid distribution than a standard sphere
-        const boxSize = 12;
+        const boxSize = 20;
         const segments = 48; 
         const geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize, segments, segments, segments);
         
@@ -392,7 +392,7 @@
         const vertex = new THREE.Vector3();
         for (let i = 0; i < positionAttribute.count; i++) {
             vertex.fromBufferAttribute(positionAttribute, i);
-            vertex.normalize().multiplyScalar(10); // Radius 10
+            vertex.normalize().multiplyScalar(15); // Increased Radius from 10 to 18
             positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
         }
 
