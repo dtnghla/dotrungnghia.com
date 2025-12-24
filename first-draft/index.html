@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognitive Sphere - Personal Homepage</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Tailwind Config for Custom Colors/Fonts -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        glass: {
+                            100: 'rgba(255, 255, 255, 0.05)',
+                            200: 'rgba(255, 255, 255, 0.1)',
+                            300: 'rgba(255, 255, 255, 0.2)',
+                            border: 'rgba(255, 255, 255, 0.15)',
+                            shadow: 'rgba(0, 0, 0, 0.1)',
+                        },
+                        darkGlass: {
+                            100: 'rgba(0, 0, 0, 0.2)',
+                            200: 'rgba(0, 0, 0, 0.4)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Core Variables --- */
+        :root {
+            /* Default to Midday */
+            --bg-color: #f4f4f5;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --accent-primary: #f59e0b; /* Golden default */
+            --accent-glow: rgba(245, 158, 11, 0.4);
+            --sphere-color: #f59e0b;
+            
+            --glass-surface: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- Themes --- */
+        [data-theme="sunrise"] {
+            --bg-color: #fff7ed; /* Warm white */
+            --text-main: #431407;
+            --accent-primary: #f97316; /* Orange */
+            --accent-glow: rgba(249, 115, 22, 0.4);
+            --sphere-color: #fdba74;
+        }
+        [data-theme="midday"] {
+            --bg-color: #f8fafc; /* Cool white */
+            --text-main: #0f172a;
+            --accent-primary: #3b82f6; /* Blue */
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --sphere-color: #60a5fa;
+        }
+        [data-theme="sunset"] {
+            --bg-color: #1a1520; /* Deep Purple Dark */
+            --text-main: #f3e8ff;
+            --text-muted: #a8a29e;
+            --accent-primary: #d946ef; /* Magenta */
+            --accent-glow: rgba(217, 70, 239, 0.4);
+            --sphere-color: #e879f9;
+            
+            --glass-surface: rgba(20, 20, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="night"] {
+            --bg-color: #09090b; /* Near Black */
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --accent-primary: #eab308; /* Gold */
+            --accent-glow: rgba(234, 179, 8, 0.3);
+            --sphere-color: #fde047;
+
+            --glass-surface: rgba(0, 0, 0, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- Global Styles --- */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: background-color 0.8s ease, color 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        /* Subtle Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- Glassmorphism Utilities --- */
+        .glass-panel {
+            background: var(--glass-surface);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Input specific styles */
+        .glass-input {
+            transition: all 0.3s var(--ease-out-expo);
+        }
+        .glass-input:focus {
+            box-shadow: 0 0 0 2px var(--accent-glow), var(--glass-shadow);
+            border-color: var(--accent-primary);
+        }
+
+        /* Chip hover gradient */
+        .chip {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+        }
+        .chip::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+        .chip:hover::before {
+            opacity: 0.2;
+        }
+        .chip:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-enter {
+            animation: fadeIn 0.6s var(--ease-out-expo) forwards;
+        }
+
+        .loading-pulse {
+            animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulseRing {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 3px;
+        }
+
+        /* Canvas container */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            /* Fade mask to blend canvas into background at the bottom */
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-yellow-200 selection:text-yellow-900" data-theme="night">
+
+    <!-- Noise Texture -->
+    <div class="noise-overlay"></div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Main Navigation / Utility Bar -->
+    <nav class="fixed top-0 w-full z-40 px-6 py-6 flex justify-between items-center max-w-[1920px] mx-auto left-0 right-0">
+
+        <div class="flex items-center gap-4">
+            <button onclick="toggleDesignSystem()" class="text-xs font-medium px-3 py-1.5 rounded-full border border-[var(--glass-border)] bg-[var(--glass-surface)] backdrop-blur-sm hover:bg-[var(--accent-glow)] transition-colors">
+                System
+            </button>
+            <button onclick="cycleTheme()" class="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-[var(--glass-surface)] backdrop-blur-sm flex items-center justify-center hover:border-[var(--accent-primary)] transition-colors group">
+                <svg class="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN HERO SECTION -->
+    <main id="main-view" class="relative z-10 w-full min-h-screen flex flex-col items-center justify-center pt-20 px-4">
+        
+        <!-- Center Content Wrapper -->
+        <div class="w-full max-w-3xl flex flex-col items-center gap-8 relative">
+            
+            <!-- Hero Text (Minimal) -->
+            <div class="text-center space-y-2 mb-8 animate-enter" style="animation-delay: 0.1s;">
+                <h1 class="text-4xl md:text-5xl font-light tracking-tight text-[var(--text-main)]">
+                    Quiet by default. <br/>
+                    <span class="text-[var(--text-muted)] italic font-serif">Alive on interaction.</span>
+                </h1>
+            </div>
+
+            <!-- Search Interface -->
+            <div class="w-full relative group animate-enter" style="animation-delay: 0.2s;">
+                <!-- Search Bar -->
+                <div class="relative z-20">
+                    <input 
+                        type="text" 
+                        id="main-search"
+                        placeholder="What are you looking for?" 
+                        class="glass-input w-full h-16 pl-6 pr-14 rounded-2xl bg-[var(--glass-surface)] backdrop-blur-xl border border-[var(--glass-border)] text-lg text-[var(--text-main)] placeholder-[var(--text-muted)] outline-none"
+                        autocomplete="off"
+                    >
+                    <!-- Search Icon / Loading Spinner -->
+                    <div class="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+                        <svg id="search-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <svg id="loading-icon" class="w-6 h-6 animate-spin hidden text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Suggestion Chips -->
+                <div id="chips-container" class="flex flex-wrap justify-center gap-3 mt-6 transition-opacity duration-300">
+                    <button class="chip px-5 py-2 rounded-full text-sm font-medium text-[var(--text-muted)] bg-[var(--glass-surface)] backdrop-blur-md" onclick="selectTopic('Projects')">Projects</button>
+                    <button class="chip px-5 py-2 rounded-full text-sm font-medium text-[var(--text-muted)] bg-[var(--glass-surface)] backdrop-blur-md" onclick="selectTopic('About')">About</button>
+                    <button class="chip px-5 py-2 rounded-full text-sm font-medium text-[var(--text-muted)] bg-[var(--glass-surface)] backdrop-blur-md" onclick="selectTopic('Contact')">Contact</button>
+                    <button class="chip px-5 py-2 rounded-full text-sm font-medium text-[var(--text-muted)] bg-[var(--glass-surface)] backdrop-blur-md" onclick="selectTopic('Philosophy')">Philosophy</button>
+                </div>
+
+                <!-- Answer Card (Hidden by default) -->
+                <div id="answer-card" class="absolute top-20 w-full mt-4 glass-panel rounded-2xl p-8 hidden opacity-0 transform translate-y-4 transition-all duration-500 z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 id="answer-title" class="text-xl font-semibold text-[var(--text-main)]">Answer Title</h3>
+                        <button onclick="closeAnswer()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div id="answer-content" class="text-[var(--text-muted)] leading-relaxed">
+                        <!-- Content injected via JS -->
+                    </div>
+                    <div id="answer-footer" class="mt-6 pt-4 border-t border-[var(--glass-border)] flex justify-between items-center text-sm text-[var(--text-muted)]">
+                        <span>Generated from local portfolio data</span>
+                        <a href="#" class="text-[var(--accent-primary)] hover:underline">Read more &rarr;</a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Footer Contact Block -->
+        <div class="absolute bottom-8 left-0 w-full text-center animate-enter" style="animation-delay: 0.4s;">
+            <p class="text-sm text-[var(--text-muted)]">
+                <a href="mailto:work@dotrungnghia.com" class="text-[var(--text-main)] hover:text-[var(--accent-primary)] transition-colors border-b border-[var(--glass-border)] pb-0.5">work@dotrungnghia.com</a>
+            </p>
+        </div>
+    </main>
+
+    <!-- DESIGN SYSTEM OVERLAY (Hidden by default) -->
+    <section id="design-system" class="fixed inset-0 bg-[var(--bg-color)] z-50 overflow-y-auto hidden pt-24 px-6 pb-20">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-end mb-16 border-b border-[var(--glass-border)] pb-8">
+                <div>
+                    <h2 class="text-3xl font-light mb-2">Design System</h2>
+                    <p class="text-[var(--text-muted)]">Tokens, components, and states.</p>
+                </div>
+                <button onclick="toggleDesignSystem()" class="text-sm px-4 py-2 bg-[var(--text-main)] text-[var(--bg-color)] rounded-lg">Close System</button>
+            </div>
+
+            <!-- Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <!-- Tokens Col -->
+                <div class="lg:col-span-4 space-y-12">
+                    <!-- Colors -->
+                    <div>
+                        <h4 class="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-6">Colors (Theme Aware)</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-[var(--bg-color)] border border-[var(--glass-border)] shadow-sm"></div>
+                                <span class="text-sm">Background</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-[var(--accent-primary)] shadow-lg shadow-[var(--accent-glow)]"></div>
+                                <span class="text-sm">Primary Accent</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-lg bg-[var(--text-main)]"></div>
+                                <span class="text-sm">Text Main</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typography -->
+                    <div>
+                        <h4 class="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-6">Typography</h4>
+                        <div class="space-y-4 border-l-2 border-[var(--glass-border)] pl-6">
+                            <h1 class="text-4xl font-light">Hero Display</h1>
+                            <h2 class="text-2xl font-medium">Section Heading</h2>
+                            <p class="text-base text-[var(--text-muted)]">Body text is set in Inter. It is designed to be highly legible at small sizes while maintaining character at display sizes.</p>
+                            <span class="text-xs font-mono text-[var(--text-muted)]">MONOSPACE LABEL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Components Col -->
+                <div class="lg:col-span-8 space-y-16">
+                    
+                    <!-- Search States -->
+                    <div>
+                        <h4 class="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-6">Search Component States</h4>
+                        <div class="grid gap-6">
+                            <!-- Default -->
+                            <div class="p-6 border border-[var(--glass-border)] rounded-xl bg-[var(--glass-surface)]/20">
+                                <label class="text-xs text-[var(--text-muted)] mb-2 block">Idle</label>
+                                <div class="glass-input h-14 px-4 rounded-xl bg-[var(--glass-surface)] border border-[var(--glass-border)] flex items-center text-[var(--text-muted)]">What?</div>
+                            </div>
+                            <!-- Focus -->
+                            <div class="p-6 border border-[var(--glass-border)] rounded-xl bg-[var(--glass-surface)]/20">
+                                <label class="text-xs text-[var(--text-muted)] mb-2 block">Focus / Active</label>
+                                <div class="glass-input h-14 px-4 rounded-xl bg-[var(--glass-surface)] border border-[var(--accent-primary)] shadow-[0_0_0_4px_var(--accent-glow)] flex items-center text-[var(--text-main)]">Desig|</div>
+                            </div>
+                            <!-- Error -->
+                            <div class="p-6 border border-[var(--glass-border)] rounded-xl bg-[var(--glass-surface)]/20">
+                                <label class="text-xs text-[var(--text-muted)] mb-2 block">Error / Fallback</label>
+                                <div class="glass-input h-14 px-4 rounded-xl bg-[var(--glass-surface)] border border-red-400/50 flex items-center justify-between text-[var(--text-main)]">
+                                    <span>Unknown command</span>
+                                    <span class="text-red-400 text-sm">!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Answer Card Preview -->
+                    <div>
+                        <h4 class="text-xs font-mono uppercase tracking-widest text-[var(--text-muted)] mb-6">Answer Panel</h4>
+                        <div class="glass-panel rounded-2xl p-8 max-w-xl">
+                            <h3 class="text-xl font-semibold mb-2">Example Response</h3>
+                            <p class="text-[var(--text-muted)] leading-relaxed">
+                                This is how the system responds to inquiries. The glass material ensures the mesmerizing sphere behind it remains visible, maintaining the "fluid energy" metaphor.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- 1. THREE.JS SCENE SETUP ---
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 22; // Distance from sphere
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Perf optimization
+        canvasContainer.appendChild(renderer.domElement);
+
+        // --- 2. COGNITIVE SPHERE GEOMETRY (Spherical Cube) ---
+        // Creating a box geometry and normalizing vertices to project to sphere
+        // This gives a nicer grid distribution than a standard sphere
+        const boxSize = 12;
+        const segments = 48; 
+        const geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize, segments, segments, segments);
+        
+        // Convert positions to sphere
+        const positionAttribute = geometry.attributes.position;
+        const vertex = new THREE.Vector3();
+        for (let i = 0; i < positionAttribute.count; i++) {
+            vertex.fromBufferAttribute(positionAttribute, i);
+            vertex.normalize().multiplyScalar(10); // Radius 10
+            positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        }
+
+        // --- 3. SHADER MATERIAL ---
+        // Using ShaderMaterial for performant GPU animations (Ripple/Twist)
+        const vertexShader = `
+            uniform float uTime;
+            uniform float uInteract; // 0.0 to 1.0
+            uniform float uTwistStrength;
+            
+            varying float vDistance;
+
+            // Simple noise function
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            void main() {
+                vec3 pos = position;
+                
+                // 1. Idle breathing
+                float breath = sin(uTime * 0.5) * 0.1;
+                pos *= (1.0 + breath * 0.02);
+
+                // 2. Interaction: Twist / Helix effect
+                // Create a horizontal wave that twists the sphere
+                float twist = sin(pos.y * 0.5 + uTime * 3.0) * uInteract * uTwistStrength;
+                
+                // Apply rotation based on Y height (helix)
+                float c = cos(twist);
+                float s = sin(twist);
+                float x = pos.x;
+                float z = pos.z;
+                
+                // Rotate around Y axis based on displacement
+                pos.x = x * c - z * s;
+                pos.z = x * s + z * c;
+
+                // 3. Ripple Effect (Liquid surface)
+                float ripple = sin(pos.x * 2.0 + uTime * 4.0) * cos(pos.y * 2.0 + uTime * 3.0) * 0.2 * uInteract;
+                pos += normal * ripple;
+
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                
+                // Size attenuation based on depth
+                gl_PointSize = (4.0 * (1.0 + uInteract * 2.0)) * (20.0 / -mvPosition.z);
+                
+                // Pass distance to fragment for coloring
+                vDistance = length(pos);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform vec3 uColor;
+            uniform float uInteract;
+            varying float vDistance;
+
+            void main() {
+                // Circular particles
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                if(length(coord) > 0.5) discard;
+
+                // Color gradient based on interaction intensity
+                vec3 finalColor = uColor;
+                
+                // Make core brighter on interaction
+                float brightness = 0.6 + (uInteract * 0.4);
+                
+                gl_FragColor = vec4(finalColor * brightness, 0.8);
+            }
+        `;
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uInteract: { value: 0 },
+                uTwistStrength: { value: 1.5 },
+                uColor: { value: new THREE.Color(getComputedStyle(document.body).getPropertyValue('--sphere-color').trim()) }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const sphere = new THREE.Points(geometry, material);
+        scene.add(sphere);
+
+        // --- 4. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        
+        // Mouse/Gyro Parallax
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            // Update Shader Uniforms
+            material.uniforms.uTime.value = elapsedTime;
+            
+            // Lerp Color from CSS variable (handles theme changes)
+            const cssColor = getComputedStyle(document.body).getPropertyValue('--sphere-color').trim();
+            const targetColor = new THREE.Color(cssColor);
+            material.uniforms.uColor.value.lerp(targetColor, 0.05);
+
+            // Parallax Rotation
+            targetRotationY += 0.002; // Constant slow rotation
+            sphere.rotation.y += 0.002;
+            
+            // Mouse influence
+            sphere.rotation.x += (mouseY - sphere.rotation.x) * 0.05;
+            sphere.rotation.y += (mouseX - (sphere.rotation.y - targetRotationY)) * 0.05;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Window Resize Handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        // --- 5. UI INTERACTION LOGIC ---
+
+        const searchInput = document.getElementById('main-search');
+        const chips = document.getElementById('chips-container');
+        const answerCard = document.getElementById('answer-card');
+        const searchIcon = document.getElementById('search-icon');
+        const loadingIcon = document.getElementById('loading-icon');
+
+        // GSAP-like simple tweener for interaction uniform
+        let interactValue = 0;
+        function tweenInteract(target, speed = 0.05) {
+            function step() {
+                interactValue += (target - interactValue) * speed;
+                material.uniforms.uInteract.value = interactValue;
+                if (Math.abs(target - interactValue) > 0.001) {
+                    requestAnimationFrame(step);
+                }
+            }
+            step();
+        }
+
+        // Typing agitates the sphere
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.length;
+            if (val > 0) {
+                tweenInteract(1.0, 0.1); // High agitation
+                hideAnswer();
+            } else {
+                tweenInteract(0.0); // Return to calm
+            }
+        });
+
+        searchInput.addEventListener('focus', () => {
+            tweenInteract(0.5); // Mild agitation on focus
+        });
+
+        searchInput.addEventListener('blur', () => {
+            if (searchInput.value.length === 0) tweenInteract(0.0);
+        });
+
+        // Search Submission / Chips
+        function selectTopic(topic) {
+            searchInput.value = topic;
+            tweenInteract(1.0);
+            processQuery(topic);
+        }
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                processQuery(searchInput.value);
+            }
+        });
+
+        // Mock Data
+        const db = {
+            'projects': `
+                <strong>Recent Work:</strong><br><br>
+                1. <em>Helios Design System</em> - A comprehensive UI kit for fintech.<br>
+                2. <em>Nebula Analytics</em> - Data visualization dashboard for NASA JPL.<br>
+                3. <em>Canvas 2.0</em> - Rethinking the digital whiteboard.<br><br>
+                See full case studies on <a href="#" class="text-[var(--accent-primary)] underline">Behance</a>.
+            `,
+            'about': `
+                I am a multidisciplinary product designer focused on complex systems and calm interfaces. 
+                Currently based in Tokyo. I believe technology should be quiet until needed.
+            `,
+            'contact': `
+                <strong>Open for opportunities.</strong><br>
+                Email: <a href="mailto:hello@alex.design" class="text-[var(--accent-primary)]">hello@alex.design</a><br>
+                Twitter: @alexdesign<br>
+                Timezone: GMT+9
+            `,
+            'philosophy': `
+                "Quiet by default, alive on interaction." <br>
+                We live in a noisy world. Digital spaces should offer sanctuary, not clamor. My work prioritizes clarity, whitespace, and intentional motion.
+            `
+        };
+
+        const fallbackContent = `
+            <strong>I didn't quite catch that.</strong><br>
+            Try searching for "Projects", "About", or "Contact". <br>
+            Or just email me at <a href="mailto:hello@alex.design" class="text-[var(--accent-primary)]">hello@alex.design</a>.
+        `;
+
+        function processQuery(query) {
+            // UI State: Loading
+            searchIcon.classList.add('hidden');
+            loadingIcon.classList.remove('hidden');
+            chips.style.opacity = '0';
+            hideAnswer();
+
+            // Simulate Network Delay
+            setTimeout(() => {
+                searchIcon.classList.remove('hidden');
+                loadingIcon.classList.add('hidden');
+                
+                // Show Answer
+                const key = query.toLowerCase();
+                const content = db[key] || fallbackContent;
+                const title = db[key] ? key.charAt(0).toUpperCase() + key.slice(1) : "No Results";
+                
+                document.getElementById('answer-title').innerText = title;
+                document.getElementById('answer-content').innerHTML = content;
+                
+                showAnswer();
+                tweenInteract(0.2); // Calm down but keep slightly active
+            }, 800);
+        }
+
+        function showAnswer() {
+            answerCard.classList.remove('hidden');
+            // small delay to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                answerCard.classList.remove('opacity-0', 'translate-y-4');
+            }, 10);
+        }
+
+        function hideAnswer() {
+            answerCard.classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => {
+                answerCard.classList.add('hidden');
+                chips.style.opacity = '1';
+            }, 300);
+        }
+
+        function closeAnswer() {
+            hideAnswer();
+            searchInput.value = '';
+            tweenInteract(0.0);
+        }
+
+        // --- 6. THEME & SYSTEM TOGGLES ---
+
+        const themes = ['night', 'sunrise', 'midday', 'sunset'];
+        let currentThemeIndex = 0;
+
+        // Set initial theme based on time
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 11) currentThemeIndex = 1; // Sunrise
+        else if (hour >= 11 && hour < 17) currentThemeIndex = 2; // Midday
+        else if (hour >= 17 && hour < 20) currentThemeIndex = 3; // Sunset
+        else currentThemeIndex = 0; // Night
+        
+        document.body.setAttribute('data-theme', themes[currentThemeIndex]);
+
+        function cycleTheme() {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            document.body.setAttribute('data-theme', themes[currentThemeIndex]);
+        }
+
+        function toggleDesignSystem() {
+            const sys = document.getElementById('design-system');
+            const main = document.getElementById('main-view');
+            
+            if (sys.classList.contains('hidden')) {
+                sys.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Lock scroll
+            } else {
+                sys.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+    </script>
+</body>
+</html>
